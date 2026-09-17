@@ -6,8 +6,9 @@ Framework de testing E2E construido con Playwright + TypeScript, diseñado con f
 
 ## Stack
 
-- **Playwright** `^1.63.0` — Framework de testing E2E
+- **Playwright** `^1.63.0` — Framework de testing E2E y API
 - **TypeScript** `^5.6.2` — Tipado estricto
+- **Zod** `^4.6.5` — Validación de schemas para contract testing
 - **Node.js** `20+` — Runtime
 - **dotenv** `^16.4.5` — Manejo de variables de entorno
 - **GitHub Actions** — CI/CD
@@ -20,16 +21,24 @@ playwright-framework/
 │   └── workflows/
 │       └── playwright.yml          # CI/CD: corre tests en cada push/PR
 ├── src/
+│   ├── api/                        # Cliente HTTP y endpoints
+│   │   ├── ApiClient.ts
+│   │   └── endpoints.ts
 │   ├── fixtures/                   # Fixtures custom de Playwright
-│   │   └── base.fixture.ts
-│   ├── models/                     # Tipos y datos de dominio
-│   │   └── user.ts
+│   │   ├── base.fixture.ts
+│   │   └── api.fixture.ts
+│   ├── models/                     # Tipos, schemas y datos de dominio
+│   │   ├── api.schemas.ts
+│   │   ├── api.types.ts
+│   │   ├── user.types.ts
+│   │   └── users.data.ts
 │   ├── pages/                      # Page Objects
 │   │   ├── BasePage.ts
 │   │   └── LoginPage.ts
 │   └── utils/                      # Utilidades compartidas (pendiente)
 ├── tests/
-│   ├── api/                        # Tests de API (pendiente)
+│   ├── api/
+│   │   └── users.spec.ts           # Tests de API
 │   └── e2e/
 │       └── login.spec.ts           # Tests E2E de login
 ├── .env.example                    # Plantilla de variables de entorno
@@ -85,6 +94,24 @@ Usamos `@playwright/test` (el runner) en lugar de la librería suelta `playwrigh
 
 **Por qué**: el runner incluye test fixtures, assertions con auto-wait, paralelización, reporters y trace viewer. La librería suelta requiere construir todo eso a mano.
 
+### 7. Separación de proyectos E2E y API
+
+Los tests E2E corren en 3 navegadores (Chromium, Firefox, WebKit). Los tests de API corren una sola vez en un proyecto `api` sin navegador.
+
+**Por qué**: los tests de API usan `APIRequestContext`, que es independiente del navegador. Correrlos por navegador duplica ejecuciones sin aportar valor. Los proyectos de navegador usan `testIgnore` para excluir `tests/api/`, y el proyecto `api` usa `testMatch` para incluir solo esos tests.
+
+### 8. Contract testing con Zod
+
+Los schemas de validación de respuestas de API están definidos con Zod en `src/models/api.schemas.ts`.
+
+**Por qué**: Zod valida tipos, formatos (email, URL) y estructura en runtime. Un solo schema se reutiliza en múltiples tests. Si la API cambia su contrato, el schema falla con un error detallado que indica el campo exacto que no cumplió. Es contract testing real, no solo validación de status codes.
+
+### 9. Nomenclatura de archivos con sufijos
+
+Los archivos siguen una convención basada en sufijos: `.types.ts` para tipos, `.data.ts` para datasets, `.spec.ts` para tests, `.fixture.ts` para fixtures, `.schemas.ts` para schemas de validación.
+
+**Por qué**: el nombre del archivo refleja su contenido. Es fácil de entender para cualquiera que entre al repo, y escala bien a medida que el proyecto crece.
+
 ## Cómo correr el proyecto
 
 ### Requisitos
@@ -112,28 +139,33 @@ cp .env.example .env
 ## Comandos disponibles
 
 | Comando               | Descripción                           |
-| --------------------- | ------------------------------------- |
-| `npm test`            | Corre todos los tests (3 navegadores) |
+| :-------------------- | :------------------------------------ |
+| `npm test`            | Corre todos los tests (E2E + API)     |
 | `npm run test:headed` | Corre los tests con navegador visible |
 | `npm run test:ui`     | Abre el modo UI de Playwright         |
 | `npm run test:debug`  | Corre los tests en modo debug         |
 | `npm run typecheck`   | Verifica tipos sin compilar           |
 | `npm run report`      | Abre el último reporte HTML           |
 
-### Ejecutar un test específico
+### Ejecutar solo un tipo de test
 
 ```bash
-npx playwright test tests/e2e/login.spec.ts
+# Solo tests E2E
+npx playwright test tests/e2e/
+
+# Solo tests de API
+npx playwright test --project=api
+
+# Solo un test específico
 npx playwright test -g "login exitoso"
-npx playwright test --project=chromium
 ```
 
 ## Estado del proyecto
 
 - ✅ 9 tests E2E cross-browser (3 escenarios × 3 navegadores)
+- ✅ 4 tests de API con validación de schemas (Zod)
 - ✅ CI/CD funcional con GitHub Actions
 - ✅ TypeScript estricto sin errores
-- ⏳ Tests de API (próximo)
 - ⏳ Más flujos E2E: inventario, carrito, checkout (próximo)
 - ⏳ Reportes de cobertura (próximo)
 
@@ -142,7 +174,8 @@ npx playwright test --project=chromium
 - [x] Setup inicial con POM + fixtures
 - [x] Cross-browser (Chromium, Firefox, WebKit)
 - [x] CI/CD con GitHub Actions
-- [ ] Tests de API con request fixture
+- [x] Tests de API con `request` fixture
+- [x] Contract testing con Zod
 - [ ] Flujos E2E: inventario, carrito, checkout
 - [ ] Manejo de flakiness con retries selectivos
 - [ ] Reporte de cobertura de código
