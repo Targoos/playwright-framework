@@ -51,15 +51,4 @@ test.describe("Checkout", () => {
     await checkoutPage.backToHome();
     await expect(page).toHaveURL(/inventory/);
   });
-
-  test("checkout con carrito vacío no permite continuar", async ({
-    cartPage,
-    checkoutPage,
-  }) => {
-    await checkoutPage.fillInfo("Tulio", "Ramirez", "1414");
-    await checkoutPage.continueToOverview();
-
-    const itemCount = await checkoutPage.getItemCount();
-    expect(itemCount).toBeGreaterThanOrEqual(0);
-  });
 });

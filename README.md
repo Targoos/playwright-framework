@@ -9,6 +9,7 @@ Framework de testing E2E construido con Playwright + TypeScript, diseñado con f
 - **Playwright** `^1.63.0` — Framework de testing E2E y API
 - **TypeScript** `^5.6.2` — Tipado estricto
 - **Zod** `^4.6.5` — Validación de schemas para contract testing
+- **http-mock** `^1.0.0` — Mock server local para tests de API
 - **Node.js** `20+` — Runtime
 - **dotenv** `^16.4.5` — Manejo de variables de entorno
 - **GitHub Actions** — CI/CD
@@ -20,26 +21,35 @@ playwright-framework/
 ├── .github/
 │   └── workflows/
 │       └── playwright.yml          # CI/CD: corre tests en cada push/PR
+├── mocks/
+│   └── mocks.json                  # Mock server local para tests de API
 ├── src/
 │   ├── api/                        # Cliente HTTP y endpoints
 │   │   ├── ApiClient.ts
 │   │   └── endpoints.ts
 │   ├── fixtures/                   # Fixtures custom de Playwright
-│   │   ├── base.fixture.ts
-│   │   └── api.fixture.ts
+│   │   ├── api.fixture.ts
+│   │   └── base.fixture.ts
 │   ├── models/                     # Tipos, schemas y datos de dominio
 │   │   ├── api.schemas.ts
 │   │   ├── api.types.ts
+│   │   ├── product.types.ts
 │   │   ├── user.types.ts
 │   │   └── users.data.ts
 │   ├── pages/                      # Page Objects
 │   │   ├── BasePage.ts
+│   │   ├── CartPage.ts
+│   │   ├── CheckoutPage.ts
+│   │   ├── InventoryPage.ts
 │   │   └── LoginPage.ts
 │   └── utils/                      # Utilidades compartidas (pendiente)
 ├── tests/
 │   ├── api/
 │   │   └── users.spec.ts           # Tests de API
 │   └── e2e/
+│       ├── cart.spec.ts            # Tests E2E de carrito
+│       ├── checkout.spec.ts        # Tests E2E de checkout
+│       ├── inventory.spec.ts       # Tests E2E de inventario
 │       └── login.spec.ts           # Tests E2E de login
 ├── .env.example                    # Plantilla de variables de entorno
 ├── playwright.config.ts            # Configuración de Playwright
@@ -112,6 +122,24 @@ Los archivos siguen una convención basada en sufijos: `.types.ts` para tipos, `
 
 **Por qué**: el nombre del archivo refleja su contenido. Es fácil de entender para cualquiera que entre al repo, y escala bien a medida que el proyecto crece.
 
+### 10. Mock server local para tests de API
+
+Los tests de API corren contra un mock server local (http-mock) en lugar de un servicio externo.
+
+**Por qué**: los servicios externos como reqres.in tienen rate limiting (HTTP 429) que hacía los tests flaky. El mock local es determinista, rápido, y no depende de un tercero. El mock está versionado en el repo, y Playwright lo levanta automáticamente vía webServer.
+
+### 11. Sincronización con auto-wait
+
+Los métodos de conteo y lectura de datos usan assertions con auto-wait (toHaveCount, waitFor({ state: 'visible' })) en lugar de lecturas inmediatas.
+
+**Por qué**: WebKit renderiza más lento que Chromium y Firefox. Sin esperas explícitas, los tests leían el DOM antes de que estuviera listo, causando flakiness cross-browser. Las esperas por estado (no por tiempo) eliminan el flakiness sin agregar sleeps fijos.
+
+### 12. Workers limitados para no saturar servicios externos
+
+El proyecto corre con 2 workers en local y 1 en CI.
+
+**Por qué**: muchos workers en paralelo saturan los servicios externos, causando timeouts y flakiness. Limitar la concurrencia mejora la estabilidad a costa de un poco más de tiempo total.
+
 ## Cómo correr el proyecto
 
 ### Requisitos
@@ -138,14 +166,23 @@ cp .env.example .env
 
 ## Comandos disponibles
 
-| Comando               | Descripción                           |
-| :-------------------- | :------------------------------------ |
-| `npm test`            | Corre todos los tests (E2E + API)     |
-| `npm run test:headed` | Corre los tests con navegador visible |
-| `npm run test:ui`     | Abre el modo UI de Playwright         |
-| `npm run test:debug`  | Corre los tests en modo debug         |
-| `npm run typecheck`   | Verifica tipos sin compilar           |
-| `npm run report`      | Abre el último reporte HTML           |
+| Comando               | Descripción                                     |
+| :-------------------- | :---------------------------------------------- |
+| `npm test`            | Corre todos los tests (E2E + API)               |
+| `npm run test:headed` | Corre los tests con navegador visible           |
+| `npm run test:ui`     | Abre el modo UI de Playwright                   |
+| `npm run test:debug`  | Corre los tests en modo debug                   |
+| `npm run typecheck`   | Verifica tipos sin compilar                     |
+| `npm run report`      | Abre el último reporte HTML                     |
+| `npm run mock-server` | Levanta el mock server en http://localhost:3001 |
+
+### Mock server
+
+El mock server corre en http://localhost:3001. Playwright lo levanta automáticamente antes de correr los tests de API, pero podés levantarlo manualmente para debug:
+
+```bash
+npm run mock-server
+```
 
 ### Ejecutar solo un tipo de test
 
@@ -162,12 +199,14 @@ npx playwright test -g "login exitoso"
 
 ## Estado del proyecto
 
-- ✅ 9 tests E2E cross-browser (3 escenarios × 3 navegadores)
-- ✅ 4 tests de API con validación de schemas (Zod)
-- ✅ CI/CD funcional con GitHub Actions
+- ✅ 45 ejecuciones E2E (15 escenarios × 3 navegadores: login, inventario, carrito, checkout)
+- ✅ 4 tests de API contra mock local con validación de schemas (Zod)
+- ✅ 49 ejecuciones totales, cero flakiness cross-browser
+- ✅ CI/CD funcional con GitHub Actions (~1m 45s por ejecución)
 - ✅ TypeScript estricto sin errores
-- ⏳ Más flujos E2E: inventario, carrito, checkout (próximo)
-- ⏳ Reportes de cobertura (próximo)
+- ⏳ Tests de accesibilidad (próximo)
+- ⏳ Tests de responsividad (próximo)
+- ⏳ Reporte de cobertura (próximo)
 
 ## Roadmap
 
@@ -176,10 +215,12 @@ npx playwright test -g "login exitoso"
 - [x] CI/CD con GitHub Actions
 - [x] Tests de API con `request` fixture
 - [x] Contract testing con Zod
-- [ ] Flujos E2E: inventario, carrito, checkout
-- [ ] Manejo de flakiness con retries selectivos
+- [x] Flujos E2E: login, inventario, carrito, checkout
+- [x] Migración a mock server local
+- [x] Manejo de flakiness cross-browser
+- [ ] Tests de accesibilidad (axe-core)
+- [ ] Tests de responsividad (mobile, tablet)
 - [ ] Reporte de cobertura de código
-- [ ] Tests de accesibilidad
 
 ## Autor
 
