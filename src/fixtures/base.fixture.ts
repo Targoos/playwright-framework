@@ -2,12 +2,14 @@ import { test as base, Page } from "@playwright/test";
 import { LoginPage } from "@pages/LoginPage";
 import { InventoryPage } from "@pages/InventoryPage";
 import { CartPage } from "@pages/CartPage";
+import { CheckoutPage } from "@pages/CheckoutPage";
 import { USERS } from "@models/users.data";
 
 type Fixtures = {
   loginPage: LoginPage;
   inventoryPage: InventoryPage;
   cartPage: CartPage;
+  checkoutPage: CheckoutPage;
   authenticatedPage: Page;
 };
 
@@ -20,6 +22,9 @@ export const test = base.extend<Fixtures>({
   },
   cartPage: async ({ page }, use) => {
     await use(new CartPage(page));
+  },
+  checkoutPage: async ({ page }, use) => {
+    await use(new CheckoutPage(page));
   },
   authenticatedPage: async ({ page }, use) => {
     const loginPage = new LoginPage(page);
