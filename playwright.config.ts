@@ -26,21 +26,52 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore: /tests\/api\/.*/,
+      testIgnore: [
+        /tests\/api\/.*/,
+        /tests\/accessibility\/.*/,
+        /tests\/responsiveness\/.*/,
+      ],
     },
     {
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
-      testIgnore: /tests\/api\/.*/,
+      testIgnore: [
+        /tests\/api\/.*/,
+        /tests\/accessibility\/.*/,
+        /tests\/responsiveness\/.*/,
+      ],
     },
     {
       name: "webkit",
       use: { ...devices["Desktop Safari"] },
-      testIgnore: /tests\/api\/.*/,
+      testIgnore: [
+        /tests\/api\/.*/,
+        /tests\/accessibility\/.*/,
+        /tests\/responsiveness\/.*/,
+      ],
     },
     {
       name: "api",
       testMatch: /tests\/api\/.*/,
+    },
+    {
+      name: "accessibility",
+      testMatch: /tests\/accessibility\/.*/,
+    },
+    {
+      name: "mobile-safari",
+      use: { ...devices["iPhone 13"] },
+      testMatch: /tests\/responsiveness\/.*/,
+    },
+    {
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 7"] },
+      testMatch: /tests\/responsiveness\/.*/,
+    },
+    {
+      name: "tablet",
+      use: { ...devices["iPad Pro 11"] },
+      testMatch: /tests\/responsiveness\/.*/,
     },
   ],
 });

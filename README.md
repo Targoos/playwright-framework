@@ -6,9 +6,10 @@ Framework de testing E2E construido con Playwright + TypeScript, diseñado con f
 
 ## Stack
 
-- **Playwright** `^1.63.0` — Framework de testing E2E y API
+- **Playwright** `^1.63.0` — Framework de testing E2E, API y responsividad
 - **TypeScript** `^5.6.2` — Tipado estricto
 - **Zod** `^4.6.5` — Validación de schemas para contract testing
+- **@axe-core/playwright** — Tests de accesibilidad (WCAG 2.1 AA)
 - **http-mock** `^1.0.0` — Mock server local para tests de API
 - **Node.js** `20+` — Runtime
 - **dotenv** `^16.4.5` — Manejo de variables de entorno
@@ -28,6 +29,7 @@ playwright-framework/
 │   │   ├── ApiClient.ts
 │   │   └── endpoints.ts
 │   ├── fixtures/                   # Fixtures custom de Playwright
+│   │   ├── a11y.fixture.ts
 │   │   ├── api.fixture.ts
 │   │   └── base.fixture.ts
 │   ├── models/                     # Tipos, schemas y datos de dominio
@@ -46,6 +48,10 @@ playwright-framework/
 ├── tests/
 │   ├── api/
 │   │   └── users.spec.ts           # Tests de API
+│   ├── accessibility/
+│   │   └── a11y.spec.ts            # Tests de accesibilidad (axe-core)
+│   ├── responsiveness/
+│   │   └── responsive.spec.ts      # Tests de responsividad (mobile/tablet)
 │   └── e2e/
 │       ├── cart.spec.ts            # Tests E2E de carrito
 │       ├── checkout.spec.ts        # Tests E2E de checkout
@@ -140,6 +146,18 @@ El proyecto corre con 2 workers en local y 1 en CI.
 
 **Por qué**: muchos workers en paralelo saturan los servicios externos, causando timeouts y flakiness. Limitar la concurrencia mejora la estabilidad a costa de un poco más de tiempo total.
 
+### 13. Tests de accesibilidad con axe-core
+
+Los tests de accesibilidad usan @axe-core/playwright para escanear las páginas críticas contra WCAG 2.1 AA.
+
+**Por qué**: la accesibilidad es un requisito legal en muchos países (ADA, EAA). La automatización con axe-core detecta aproximadamente el 30-40% de los problemas comunes. El test bloquea solo violaciones critical y serious para no generar fatiga de alertas. El fixture makeAxeBuilder extiende base.fixture y hereda los Page Objects, manteniendo la misma arquitectura que el resto de los tests.
+
+### 14. Tests de responsividad cross-device
+
+Los tests de responsividad corren en 3 dispositivos (iPhone 13, Pixel 7, iPad Pro 11) usando los perfiles de devices de Playwright.
+
+**Por qué**: la emulación de dispositivos configura automáticamente viewport, userAgent, deviceScaleFactor y hasTouch. Los tests verifican que las páginas críticas cargan correctamente, que los elementos son visibles, y que no hay scroll horizontal. Es cross-device testing además de cross-browser.
+
 ## Cómo correr el proyecto
 
 ### Requisitos
@@ -166,15 +184,17 @@ cp .env.example .env
 
 ## Comandos disponibles
 
-| Comando               | Descripción                                     |
-| :-------------------- | :---------------------------------------------- |
-| `npm test`            | Corre todos los tests (E2E + API)               |
-| `npm run test:headed` | Corre los tests con navegador visible           |
-| `npm run test:ui`     | Abre el modo UI de Playwright                   |
-| `npm run test:debug`  | Corre los tests en modo debug                   |
-| `npm run typecheck`   | Verifica tipos sin compilar                     |
-| `npm run report`      | Abre el último reporte HTML                     |
-| `npm run mock-server` | Levanta el mock server en http://localhost:3001 |
+| Comando                                       | Descripción                                     |
+| :-------------------------------------------- | :---------------------------------------------- |
+| `npm test`                                    | Corre todos los tests (E2E + API)               |
+| `npm run test:headed`                         | Corre los tests con navegador visible           |
+| `npm run test:ui`                             | Abre el modo UI de Playwright                   |
+| `npm run test:debug`                          | Corre los tests en modo debug                   |
+| `npm run typecheck`                           | Verifica tipos sin compilar                     |
+| `npm run report`                              | Abre el último reporte HTML                     |
+| `npm run mock-server`                         | Levanta el mock server en http://localhost:3001 |
+| `npx playwright test --project=accessibility` | Corre solo tests de accesibilidad               |
+| `npx playwright test --project=mobile-safari` | Corre solo tests de responsividad en iPhone 13  |
 
 ### Mock server
 
@@ -199,13 +219,13 @@ npx playwright test -g "login exitoso"
 
 ## Estado del proyecto
 
-- ✅ 45 ejecuciones E2E (15 escenarios × 3 navegadores: login, inventario, carrito, checkout)
+- ✅ 45 ejecuciones E2E (15 escenarios × 3 navegadores)
 - ✅ 4 tests de API contra mock local con validación de schemas (Zod)
-- ✅ 49 ejecuciones totales, cero flakiness cross-browser
-- ✅ CI/CD funcional con GitHub Actions (~1m 45s por ejecución)
+- ✅ 4 tests de accesibilidad (WCAG 2.1 AA con axe-core)
+- ✅ 12 tests de responsividad (4 escenarios × 3 dispositivos)
+- ✅ 65 ejecuciones totales, cero flakiness cross-browser
+- ✅ CI/CD funcional con GitHub Actions
 - ✅ TypeScript estricto sin errores
-- ⏳ Tests de accesibilidad (próximo)
-- ⏳ Tests de responsividad (próximo)
 - ⏳ Reporte de cobertura (próximo)
 
 ## Roadmap
@@ -218,8 +238,8 @@ npx playwright test -g "login exitoso"
 - [x] Flujos E2E: login, inventario, carrito, checkout
 - [x] Migración a mock server local
 - [x] Manejo de flakiness cross-browser
-- [ ] Tests de accesibilidad (axe-core)
-- [ ] Tests de responsividad (mobile, tablet)
+- [x] Tests de accesibilidad (axe-core)
+- [x] Tests de responsividad (mobile, tablet)
 - [ ] Reporte de cobertura de código
 
 ## Autor

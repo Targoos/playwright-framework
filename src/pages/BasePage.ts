@@ -15,6 +15,20 @@ export abstract class BasePage {
     await this.page.waitForLoadState("domcontentloaded");
   }
 
+  async expectNoHorizontalScroll(): Promise<void> {
+    const scrollWidth = await this.page.evaluate(
+      () => document.documentElement.scrollWidth,
+    );
+    const clientWidth = await this.page.evaluate(
+      () => document.documentElement.clientWidth,
+    );
+    if (scrollWidth > clientWidth + 1) {
+      throw new Error(
+        `Horizontal scroll detected: scrollWidth=${scrollWidth}px, clientWidth=${clientWidth}px`,
+      );
+    }
+  }
+
   async getTitle() {
     return this.page.title();
   }
