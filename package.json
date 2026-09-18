@@ -9,12 +9,14 @@
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
     "report": "playwright show-report",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "mock-server": "http-mock mocks/mocks.json"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@lowdep/http-mock": "^1.0.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.3",
     "dotenv": "^16.4.5",

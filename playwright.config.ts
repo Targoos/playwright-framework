@@ -10,6 +10,12 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : 2,
   reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
+  webServer: {
+    command: "npm run mock-server",
+    url: "http://localhost:3001/api/users",
+    reuseExistingServer: !process.env.CI,
+    timeout: 30 * 1000,
+  },
   use: {
     baseURL: process.env.BASE_URL || "https://www.saucedemo.com",
     trace: "on-first-retry",

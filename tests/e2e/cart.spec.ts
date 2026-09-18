@@ -28,6 +28,7 @@ test.describe("Cart", () => {
   }) => {
     await inventoryPage.addProductToCart("Sauce Labs Backpack");
     await cartPage.goto();
+    await cartPage.expectItemCount(1);
 
     const names = await cartPage.getItemNames();
     const prices = await cartPage.getItemPrices();
